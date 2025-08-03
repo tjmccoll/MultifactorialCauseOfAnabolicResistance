@@ -1,9 +1,15 @@
 # Exploring the mechanisms and therapeutic strategies for anabolic resistance in sarcopenia: a computational approach
 
 ## Overview
-The muscle protein synthesis kinetic model allows for the simulation of leucine-mediated mTOR signaling via insulin- and leucine-independent pathways and protein synthesis in skeletal muscle of young adults. The model can be used to simulate leucine feeding of different doses and timing to visualize the downstream signaling cascade. 
+This study builds upon the previously developed [McColl & Clarke (2024) Muscle Protein Synthesis Kinetic Model](https://www.cell.com/iscience/fulltext/S2589-0042(23)02711-6?_returnURL=https%3A%2F%2Flinkinghub.elsevier.com%2Fretrieve%2Fpii%2FS2589004223027116%3Fshowall%3Dtrue) to simulate potential causes of anabolic resistance observed in sarcopenia. 
 
-This tool is being developed by the [Clarke Laboratory for Quantitative Exercise Biology](https://www.sfu.ca/clarkelab-bpk.html). Further information on the muscle protein synthesis kinetic model can be found in the following study.
+We apply two complementary sensitivity analysis approaches to identify model parameters (i.e., physiological mechanisms) most likely to contribute to anabolic resistance:
+1. **Naive Approach** - A broad, data-agnostic sensitivity analysis to identify parameters with the largest impact on anabolic resistance.
+2. **Targeted Approach** - A data-informed simulation of putative mechanisms of anabolic resistance, as identified in the literature. Model parameters are varied based on literature-derived estimates to quantitatively assess their influence on muscle metabolism.
+
+In the Targeted Approach, mechanisms are simulated both individually and in combination to evaluate how they may interact to reproduce the muscle metabolism responses obserbed in older adults.
+
+This tool is being developed by the [Clarke Laboratory for Quantitative Exercise Biology](https://www.sfu.ca/clarkelab-bpk.html). Further information can be found in the following study.
 
 > (update with BioRxIv link)
 
