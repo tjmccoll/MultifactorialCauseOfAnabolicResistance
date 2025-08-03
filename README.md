@@ -13,5 +13,5 @@ The 'McColl_2025_multifactorialCauseOfAnabolicResistance_250801' folder contains
 ## Installation
 Download the package to a local folder (e.g., '~/MultiFactorialCauseOfAnabolicResistance/') by extracting the ZIP file or by running the following terminal command:
 ```
-[git clone https://github.com/tjmccoll/MuscleProteinSynthesisKineticModel.git](https://github.com/tjmccoll/MultifactorialCauseOfAnabolicResistance.git)
+git clone https://github.com/tjmccoll/MuscleProteinSynthesisKineticModel.git
 ```
