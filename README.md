@@ -22,7 +22,10 @@ To simulate the study analyses:
 1. ...
 2. ...
 
-### File list **(UPDATE)**
+### File list 
+
+**(UPDATE)**
+
 #### 'Code' folder:
 * ‘McColl_2023_model execution_230922.mlx’: This script contains the code to simulate the model and create all the plots included in the manuscript and supplementary information. 
 #### 'Experimental Data' folder:
@@ -37,7 +40,7 @@ To simulate the study analyses:
 #### 'Meta-analysis' folder:
 * Contains the R code and experimental data needed replicate the p-Akt and p-p70S6K meta-analysis and spline regressions.
 #### 'Optimizer' folder:
-* 	•	Contains the ‘runOptimizer_230923’ code to run the parameter optimizer and the ‘objectiveFunction_230923’ function that the optimizer seeks to minimize.
+* Contains the ‘runOptimizer_230923’ code to run the parameter optimizer and the ‘objectiveFunction_230923’ function that the optimizer seeks to minimize.
 #### 'Output Plots' folder:
 * Empty folder
 * The model execution script will create a folder corresponding to the date and time that line 9 is run where saved model figures are stored.
