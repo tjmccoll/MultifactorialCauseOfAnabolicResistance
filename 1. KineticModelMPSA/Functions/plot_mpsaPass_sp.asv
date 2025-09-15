@@ -1,0 +1,157 @@
+function plot_mpsaPass_sp(figNum, t, x_conc, x_mass, runDur, eqDur, kValues)
+
+
+%% Species 
+
+AktS473_pos = 21;
+Akt_pos = 19;
+AktT308_pos = 20;
+AktS473T308_pos = 22;
+p70S6K_pos = 27;
+p70S6KT389_pos = 28;
+LeucinePlasma_pos = 4;
+LeucineInt_pos = 6;
+Insulin_pos = 3;
+Protein_pos = 8;
+kicPlasma_pos = 5;
+kicInt_pos = 7;
+F_ma_pos = 41;
+F_m0_pos = 42;
+MPS_pos = 44; %rate of MPS
+MPB_pos = 45;
+FSR_pos = 46;
+
+%%
+figure(figNum)
+
+minuteSpacing=60;
+xTicksSeq = 0:minuteSpacing:runDur;
+% xTicksSeq = -eqDur:minuteSpacing:runDur;
+xTicks = eqDur+xTicksSeq;
+
+
+%% Plasma Leucine
+hold on
+subplot(3,3,1)
+plot(t, x_conc(:,LeucinePlasma_pos))
+    grid on
+    ylim([0 1.4e-3])    
+    xlim([0 eqDur+runDur])
+    xticks(xTicks)
+    xticklabels(xTicksSeq)
+    ylabel('Concentration (mol/L)')
+    xlabel('Time (min)')
+    yticks(0 : 0.3e-3 : 1.4e-3)
+    title('Leucine')
+
+hold on
+plot(t, x_conc(:,LeucineInt_pos), '--')
+
+%% Plasma insulin
+hold on
+subplot(3,3,2)
+plot(t, x_conc(:,Insulin_pos))
+    grid on 
+    ylim([0 1.5e-10])
+    xlim([0 eqDur+runDur])
+    xticks(xTicks)
+    xticklabels(xTicksSeq)
+    ylabel('Concentration (mol/L)')
+    xlabel('Time (min)')
+    title('Plasma Insulin')
+
+%% 3-pool model
+hold on 
+subplot(3,3,3)
+plot(t, x_mass(:,F_ma_pos))
+    grid on
+    ylim([-1E-5 18E-5])
+    xlim([0 eqDur+runDur])
+    xticks(xTicks)
+    xticklabels(xTicksSeq)
+    ylabel('Moles/min')
+    xlabel('Time (min)')
+    title('3-Pool Model')
+
+hold on
+plot(t, x_mass(:,F_m0_pos),'--')
+
+%% Akt
+Akt_total = x_conc(:,Akt_pos) + x_conc(:,AktT308_pos) + x_conc(:,AktS473_pos) + x_conc(:,AktS473T308_pos);
+
+hold on
+subplot(3,3,4)
+plot(t, Akt_total, 'Color',[0.5 0.5 0.5], 'linewidth', 1.5)
+    grid on
+    ylim([0 3.2e-8])
+%     ylim([0 Akt_total(1,1)*1.1])
+    xlim([0 eqDur+runDur])
+    xticks(xTicks)
+    xticklabels(xTicksSeq)
+    ylabel('Concentration (mol/L)')
+    xlabel('Time (min)')
+%     yticks(0 : 0.4e-8 : Akt_total(1,1)*1.1)
+    title('Akt')
+
+hold on 
+plot (t,x_conc(:,AktS473_pos));
+
+%% p70S6K
+p70S6K_total = x_conc(:,p70S6K_pos) + x_conc(:,p70S6KT389_pos);
+
+hold on
+subplot(3,3,5)
+plot(t, p70S6K_total, 'Color',[0.5 0.5 0.5], 'linewidth', 1.5)
+    grid on
+%     ylim([0 2.1e-8])
+    ylim([0 2.1*])
+    xlim([0 eqDur+runDur])
+    xticks(xTicks)
+    xticklabels(xTicksSeq)
+    ylabel('Concentration (mol/L)')
+    xlabel('Time (min)')
+    title('p70S6K')
+
+hold on
+plot(t, x_conc(:,p70S6KT389_pos))
+
+%% FSR
+hold on
+subplot(3,3,6)
+plot(t,x_mass(:,MPS_pos))
+    grid on        
+    ylim([0e-5 5e-5])
+    xlim([0 eqDur+runDur])
+    xticks(xTicks)
+    xticklabels(xTicksSeq)
+    ylabel('Moles/min')
+    xlabel('Time (min)')
+    title('MPS')
+
+hold on
+subplot(3,3,7)
+plot(t,x_mass(:,MPB_pos))
+    grid on        
+    ylim([-0.1e-5 5e-5])
+    xlim([0 eqDur+runDur])
+    xticks(xTicks)
+    xticklabels(xTicksSeq)
+    ylabel('Moles/min')
+    xlabel('Time (min)')
+    title('MPB')
+
+netBalance = x_mass(:,MPS_pos) - x_mass(:,MPB_pos);
+hold on
+subplot(3,3,8)
+plot(t,netBalance)
+    grid on        
+    ylim([-2e-5 5e-5])
+    xlim([0 eqDur+runDur])
+    xticks(xTicks)
+    xticklabels(xTicksSeq)
+    ylabel('Moles/min')
+    xlabel('Time (min)')
+    title('Net Balance')
+
+
+end
