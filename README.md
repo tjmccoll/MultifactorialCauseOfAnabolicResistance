@@ -57,7 +57,10 @@ tmccoll@sfu.ca
 
 ## Citation
 If you use the simulations and analyses in this repository, please cite the paper:
-> McColl, T.J., Moore, D.R., Emberly, E., Church, D.D., & Clarke, D.C. [Exploring the multifactorial causes and therapeutic strategies for anabolic resistance in sarcopenia: A systems modeling study.](https://www.biorxiv.org/content/10.1101/2025.09.12.675977v1) bioRxiv 2025.09.12.675977; doi: 10.1101/2025.09.12.675977
+> **McColl, T.J., Moore, D.R., Emberly, E., Church, D.D., & Clarke, D.C.**\
+> [Exploring the multifactorial causes and therapeutic strategies for anabolic resistance in sarcopenia: A systems modeling study.](https://www.biorxiv.org/content/10.1101/2025.09.12.675977v1)\
+> bioRxiv 2025.09.12.675977\
+> doi: 10.1101/2025.09.12.675977
 
 If you use the mathematical model in this repository, please cite the original paper:
 > **McColl, TJ & Clarke, DC.**\
