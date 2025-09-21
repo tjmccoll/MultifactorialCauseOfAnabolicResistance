@@ -1,0 +1,396 @@
+---
+title: 'Naive analysis: data visualization'
+author: "Taylor McColl"
+date: "2025-03-03"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+### Study 4b: Anabolic resistance, naive approach
+Data visualization
+```{r}
+# clear data
+rm(list=ls())
+
+# load libraries
+library(ggplot2)
+library(gridExtra)
+```
+
+## Load data
+Update the setwd folder to the location in which the manuscript code is saved
+```{r}
+setwd("/Users/taylormccoll/Documents/SFU/1.\ Ph.D./1.\ Research\ Projects/2.\ MPSA\ and\ analyses/4.\ Writing/2.\ Manuscript/ManuscriptCodeSharing/MultifactorialCauseOfAnabolicResistance/2.\ NaiveApproach")
+
+## Young adult, lower 95% CI - k68 included, 95% CI calculation corrected
+# Anabolic resistance dataset
+AR_mpsRead = data.frame(t(read.csv("naive_MPSAdata/anabolicResistance_Sim/filteredMpsResponse/AnabolicRes_MpsOutput_25-09-20 20-49-25.csv",header=F,sep=',')))
+AR_kValueRead = data.frame(t(read.csv("naive_MPSAdata/anabolicResistance_Sim/filteredMpsResponse/AnabolicRes_kValues_25-09-20 20-49-25.csv",header=F,sep=',')))
+AR_concRead = data.frame(t(read.csv("naive_MPSAdata/anabolicResistance_Sim/filteredMpsResponse/AnabolicRes_concentrations_25-09-20 20-49-25.csv",header=F,sep=',')))
+
+# Anabolic sensitive dataset
+AS_mpsRead = data.frame(t(read.csv("naive_MPSAdata/anabolicResistance_Sim/filteredMpsResponse/Non_AnabolicRes_MpsOutput_25-09-20 20-49-25.csv",header=F,sep=',')))
+AS_kValueRead = data.frame(t(read.csv("naive_MPSAdata/anabolicResistance_Sim/filteredMpsResponse/Non_AnabolicRes_kValues_25-09-20 20-49-25.csv",header=F,sep=',')))
+AS_concRead = data.frame(t(read.csv("naive_MPSAdata/anabolicResistance_Sim/filteredMpsResponse/Non_AnabolicRes_concentrations_25-09-20 20-49-25.csv",header=F,sep=',')))
+
+```
+
+## Manipulating data
+```{r}
+## k-values
+# adding column names
+kValue_names <- c("k1","k2","k3","k4","k5","k6","k7","k8","k9","k10",
+                      "k11","k12","k13","k14","k15","k16","k17","k18","k19","k20",
+                      "k21","k22","k23","k24","k25","k26","k27","k28","k29","k30",
+                      "k31","k32","k33","k34","k35","k36","k37","k38","k39","k40",
+                      "k41","k42","k43","k44","k45","k46","k47","k48","k49","k50",
+                      "k51","k52","k53","k54","k55","k56","k57","k58","k59","k60",
+                      "k61","k62","k63","k64","k65","k66","k67","k68","k69")
+colnames(AR_kValueRead) <- kValue_names
+colnames(AS_kValueRead) <- kValue_names
+
+# removing non-changing values
+AR_kValueRead_changing <- AR_kValueRead[,-c(1:4,8,48:50)] # k68 retained
+AS_kValueRead_changing <- AS_kValueRead[,-c(1:4,8,48:50)] # k68 retained
+
+## Concentrations
+# removing non-changing values
+AR_concRead_changing <- AR_concRead[,-c(1:2,33:34,40)]
+AS_concRead_changing <- AS_concRead[,-c(1:2,33:34,40)]
+
+# adding column names
+concentration_names <- c('Insulin__plasma', 'Leucine__plasma', 'KIC__plasma', 'Leucine__intracellular', 'KIC__intracellular', 'Protein', 
+                            'IR__beta', 'p..IR__beta._Y1164', 'p..IR__beta._refractory', 'IRS1', 'p..IRS1._Y', 'p..IRS1._S', 'PI3K', 
+                            'p..IRS1._Y..PI3K__clx', 'PDK1', 'p..PDK1', 'Akt', 'p..Akt._T308', 'p..Akt._S473', 'p..Akt._T308,S473', 
+                            'TSC__clx', 'p..TSC__clx', 'mTORC1__inactive', 'mTORC1__active', 'p70S6K1', 'p..p70S6K1._T389', 
+                            'PI3K__var', 'p..PI3K__var', 'mTORC2', 'p..mTORC2._S2481', 'Insulin__intracellular', 'Glucose__plasma', 'x1', 
+                            'x2', 'x3')
+colnames(AR_concRead_changing) <- concentration_names
+colnames(AS_concRead_changing) <- concentration_names
+
+# removing additional non-changing values
+AR_concRead_changing <- AR_concRead_changing[,-c(31:35)]
+AS_concRead_changing <- AS_concRead_changing[,-c(31:35)]
+
+## Concatenating the parameters values
+AR_allParameters_changing <- data.frame(AR_kValueRead_changing, AR_concRead_changing)
+AS_allParameters_changing <- data.frame(AS_kValueRead_changing, AS_concRead_changing)
+```
+
+## 1. Identifying discrepant parameter distributions between AR and AS
+MATLAB results presented in manuscript (statistics are the same, but visualization is easier in MATLAB)
+```{r}
+# Number of parameters (columns)
+num_params <- ncol(AR_allParameters_changing)
+
+# Initialize vectors to store p-values and KS statistics
+p_values <- numeric(num_params)
+ks_statistic <- numeric(num_params)
+
+# Perform the KS test for each parameter
+for (i in 1:num_params) {
+  # Extract parameter values for each group
+  x_sensitive <- AS_allParameters_changing[, i]
+  x_resistant <- AR_allParameters_changing[, i]
+  
+  # Apply the KS test
+  ks_result <- ks.test(log10(x_sensitive), log10(x_resistant))
+  
+  # Store p-value and KS statistic
+  p_values[i] <- ks_result$p.value
+  ks_statistic[i] <- ks_result$statistic
+}
+
+# Apply FDR correction (Benjamini-Hochberg)
+q_values <- p.adjust(p_values, method = "BH")
+
+# Create a data frame with parameter names and results
+param_names <- colnames(AR_allParameters_changing)
+results_df <- data.frame(
+  Parameter = param_names,
+  p_value = p_values,
+  q_value = q_values,
+  KS_stat = ks_statistic
+)
+
+# Display significant results (adjusted q-value < 0.05)
+significant_results <- results_df[results_df$q_value < 0.05,]
+significant_results <- significant_results[order(significant_results$KS_stat, decreasing=TRUE),]
+
+print(significant_results)
+
+```
+## Bar graph of the KS test results
+```{r}
+# Renaming the parameters
+kValue_names <- results_df$Parameter[1:61]
+
+concentration_namesReduced <- c('Insulin_pl', 'Leucine_pl', 'KIC_pl', 'Leucine_int', 'KIC_int', 'Protein',
+                            'IR_beta', 'p-IR_beta', 'p-IR_beta(refr)', 'IRS1', 'p-IRS1(Y)', 'p-IRS1(S)', 'PI3K',
+                            'p-IRS1(Y)-PI3K', 'PDK1', 'p-PDK1', 'Akt', 'p-Akt(T)', 'p-Akt(S)', 'p-Akt(T,S)',
+                            'TSC_clx', 'p-TSC_clx', 'mTORC1_inactive', 'mTORC1_active', 'p70S6K1', 'p-p70S6K1',
+                            'PI3K_var', 'p-PI3K_var', 'mTORC2', 'p-mTORC2')
+
+results_df$paramName_reduced <- c(kValue_names, concentration_namesReduced)
+
+
+# Create a data frame with the KS statistics and q-values for each parameter
+results_df$Significant <- ifelse(results_df$q_value < 0.05, "Significant", "Not Significant")
+
+# Find the smallest KS statistic for significant parameters (q-value < 0.05)
+min_ks_stat <- 0.06 
+
+results_df$Parameter <- factor(results_df$Parameter, levels = results_df$Parameter)
+
+# Plot bar graph of KS statistics
+ksTest_barChart = ggplot(results_df, aes(x = Parameter, y = KS_stat, fill = Significant)) +
+  geom_bar(stat = "identity", show.legend = FALSE) +
+  geom_hline(yintercept = min_ks_stat , 
+             linetype = "dashed", color = "red", size = 1) +
+  scale_fill_manual(values = c("Significant" = "blue", "Not Significant" = "grey")) +
+  labs(title = "",
+       x = "Parameters", 
+       y = "KS Test Statistic") +
+  # theme_minimal() +
+  scale_x_discrete(labels = results_df$paramName_reduced) +
+  theme(axis.text.x = element_text(angle=45, hjust=1, size = 5))
+
+print(ksTest_barChart)
+
+ggsave(file = paste0("Output Plots/R Analysis/ksTest_barGraph", ".pdf"),
+       plot = ksTest_barChart,
+       width = 9,
+       height = 4,
+       units = "in",
+       device = "pdf")
+```
+
+## 2. Visualizing the distributions of the significant parameters between anabolic resistant and sensitive groups
+KS test: significant parameters only
+```{r}
+## Lower 95% CI of young adults
+sigParameters = c("k15", "k10", "p70S6K1", "mTORC1__inactive",
+                  "k42", "k39", "k40", "k43", 
+                  "k68", "k65")
+
+detailedTitles = (c("p70S6K-mediated\nMPS", "Leucine trans-\namination to KIC", "\n[p70S6K]",
+                    "\n[mTORC1]", "p70S6K\ndephosphorylation", "Leucine-mediated\nmTORC1 signaling",
+                    "mTORC1-mediated\np70S6K activity", "p70S6K-mediated\nmTORC1 inhibition",
+                    "First-pass\nsplanchnic extraction", "Hepatic glucose\nproduction"))
+
+plot_list = list()
+for (i in 1:length(sigParameters)) {
+  parameterName = sigParameters[i]
+
+  # Accepted parameter values
+  kValue_plot_AR = data.frame(x = factor("AR", levels = c("AR", "AS")),
+                              y = log10(AR_allParameters_changing[[parameterName]]))
+  kValue_plot_nonAR = data.frame(x = factor("AS", levels = c("AR", "AS")),
+                                 y = log10(AS_allParameters_changing[[parameterName]]))
+  
+  kValue_plot = rbind(kValue_plot_AR, kValue_plot_nonAR)
+  
+  plotParamterRange = ggplot(kValue_plot, aes(x, y)) +    
+    geom_violin(data=kValue_plot_nonAR, scale = "width", width = 0.8, size = 0.8) +
+    geom_violin(data=kValue_plot_AR, scale = "width", width = 0.8, size = 0.8) +
+    geom_boxplot(data=kValue_plot_nonAR, width=0.2, size = 0.8) +
+    geom_boxplot(data=kValue_plot_AR, width=0.2, size = 0.8) +
+    geom_jitter(shape=".", color="black", size=.05, alpha=0.075, width=0.15) +
+    # labs(title = parameterName, x="", y="") +
+    labs(title = detailedTitles[i], x="", y="")+
+    ylab(
+      if (grepl("_", sigParameters[i])) {
+        parts <- unlist(strsplit(sigParameters[i], "_"))  
+        bquote(log(.(parts[1])[.(parts[2])]))  
+      } else { 
+        bquote(log(.(sigParameters[i])))
+      }) +
+    scale_x_discrete(labels = c("AS" = NULL, "AR" = NULL))  +
+    
+    # Reduce y-axis label and tick label size
+    theme(axis.title.y = element_text(size = 9),         # Y-axis label size
+          axis.text.y = element_text(size = 5),            # Y-axis tick label size
+          plot.margin = unit(c(0.15, 0.15, 0.0 , 0.15), "lines"),
+          plot.title = element_text(size = 9, hjust = 0.5))
+    
+  # Only display x-axis labels on the bottom row of plots
+  if (i > (length(sigParameters) - 4)) {  # Adjust this if you want to change the number of rows
+    plotParamterRange = plotParamterRange 
+  } else {
+    plotParamterRange = plotParamterRange + theme(axis.text.x = element_blank(), axis.ticks.x = element_blank())
+  }
+
+  plot_list[[i]] = plotParamterRange
+}
+
+# Adjust grid layout to reduce space between plots
+parameterRanges_kValue_v2_log_putativeMechanisms = grid.arrange(grobs=plot_list, ncol=4)
+
+ggsave(file = paste0("Output plots/R Analysis/Anabolic_resistance_sigParameters_v2", ".pdf"),
+       plot = parameterRanges_kValue_v2_log_putativeMechanisms,
+       width = 6,
+       height = 5,
+       units = "in",
+       device = "pdf")
+```
+
+# Parameter distributions for all parameters
+k-values
+```{r}
+kValueLength = length(AR_kValueRead_changing)
+
+plot_list = list()
+for (i in 1:kValueLength) {
+  parameterName = colnames(AR_allParameters_changing)[i]
+
+  # Accepted parameter values
+  kValue_plot_AR = data.frame(x = factor("AR", levels = c("AR", "AS")),
+                              y = log10(AR_allParameters_changing[[parameterName]]))
+  kValue_plot_nonAR = data.frame(x = factor("AS", levels = c("AR", "AS")),
+                                 y = log10(AS_allParameters_changing[[parameterName]]))
+
+  kValue_plot = rbind(kValue_plot_AR, kValue_plot_nonAR)
+
+  plotParamterRange = ggplot(kValue_plot, aes(x, y)) +
+    geom_violin(data=kValue_plot_nonAR, scale = "width", width = 0.8, size = 0.8) +
+    geom_violin(data=kValue_plot_AR, scale = "width", width = 0.8, size = 0.8) +
+    geom_boxplot(data=kValue_plot_nonAR, width=0.2, size = 0.8) +
+    geom_boxplot(data=kValue_plot_AR, width=0.2, size = 0.8) +
+    geom_jitter(shape=".", color="black", size=.05, alpha=0.075, width=0.15) +
+    labs(title = "", x="", y="") +
+    labs(title = parameterName, x="", y="")+
+    ylab(
+      if (grepl("_", parameterName)) {
+        parts <- unlist(strsplit(parameterName, "_"))
+        bquote(log(.(parts[1])[.(parts[2])]))
+      } else {
+        bquote(log(.(parameterName)))
+      }) +
+    scale_x_discrete(labels = c("AS" = "A.S.", "AR" = "A.R.")) +
+
+    # Reduce y-axis label and tick label size
+    theme(axis.title.y = element_text(size = 7),         # Y-axis label size
+          axis.text.y = element_text(size = 5),            # Y-axis tick label size
+          plot.margin = unit(c(0.15, 0.15, 0.0 , 0.15), "lines"),
+          plot.title = element_text(size = 9, hjust = 0.5))
+
+  # Only display x-axis labels on the bottom row of plots
+  if (i > (kValueLength - 9)) {  # Adjust this if you want to change the number of rows
+    plotParamterRange = plotParamterRange
+  } else {
+    plotParamterRange = plotParamterRange + theme(axis.text.x = element_blank(), axis.ticks.x = element_blank())
+  }
+
+  plot_list[[i]] = plotParamterRange
+}
+
+# Adjust grid layout to reduce space between plots
+parameterRanges_kValue_v2_log_putativeMechanisms = grid.arrange(grobs=plot_list, ncol=9)
+
+ggsave(file = paste0("Output plots/R Analysis/Anabolic_resistance_kValuesComprehensive_v2", ".pdf"),
+       plot = parameterRanges_kValue_v2_log_putativeMechanisms,
+       width = 6*2,
+       height = 9,
+       units = "in",
+       device = "pdf")
+
+```
+
+concentrations
+```{r}
+concLength = length(AR_concRead_changing)
+
+plot_list = list()
+for (i in 1:concLength) {
+  i = i + kValueLength
+  parameterName = colnames(AR_allParameters_changing)[i]
+
+  # Accepted parameter values
+  kValue_plot_AR = data.frame(x = factor("AR", levels = c("AR", "AS")),
+                              y = log10(AR_allParameters_changing[[parameterName]]))
+  kValue_plot_nonAR = data.frame(x = factor("AS", levels = c("AR", "AS")),
+                                 y = log10(AS_allParameters_changing[[parameterName]]))
+
+  kValue_plot = rbind(kValue_plot_AR, kValue_plot_nonAR)
+
+  # Function to format labels
+  format_label <- function(parameterName) {
+    # Replace ".." with "-"
+    formattedName <- gsub("\\.\\.", "-", parameterName)
+    
+    # Replace "._" with "^" for superscripts and "__" with "[" for subscripts
+    formattedName <- gsub("\\._", "^", formattedName)
+    formattedName <- gsub("__", "[", formattedName)
+
+    # Split by superscript and subscript markers
+    parts <- unlist(strsplit(formattedName, "\\^|\\["))
+
+    # Apply formatting based on the number of parts
+    if (length(parts) == 3) {
+      # Both superscript and subscript
+      bquote(.(parts[1])[.(parts[2])]^.(parts[3]))
+    } else if (length(parts) == 2) {
+      # Superscript or subscript
+      if (grepl("\\^", formattedName)) {
+        bquote(.(parts[1])^.(parts[2]))  # Superscript case
+      } else {
+        bquote(.(parts[1])[.(parts[2])])  # Subscript case
+      }
+    } else {
+      # Standard case (no superscript or subscript)
+      bquote(.(formattedName))
+    }
+  }
+
+  plotParamterRange = ggplot(kValue_plot, aes(x, y)) +
+    geom_violin(data=kValue_plot_nonAR, scale = "width", width = 0.8, size = 0.8) +
+    geom_violin(data=kValue_plot_AR, scale = "width", width = 0.8, size = 0.8) +
+    geom_boxplot(data=kValue_plot_nonAR, width=0.2, size = 0.8) +
+    geom_boxplot(data=kValue_plot_AR, width=0.2, size = 0.8) +
+    geom_jitter(shape=".", color="black", size=.05, alpha=0.075, width=0.15) +
+    labs(
+      x = "",
+      y = "",
+      title = format_label(parameterName)  # Apply formatted title
+    ) +
+    
+    # ylab with log() formatting
+    ylab({
+      # Place the formatted label inside log()
+      bquote(log(.(format_label(parameterName))))
+    }) +
+    
+    scale_x_discrete(labels = c("AS" = "A.S.", "AR" = "A.R.")) +
+    
+    # Reduce y-axis label and tick label size
+    theme(
+      axis.title.y = element_text(size = 7),         # Y-axis label size
+      axis.text.y = element_text(size = 5),           # Y-axis tick label size
+      plot.margin = unit(c(0.15, 0.15, 0.0 , 0.15), "lines"),
+      plot.title = element_text(size = 9, hjust = 0.5) # Title size and centering
+    )
+
+  # Only display x-axis labels on the bottom row of plots
+  if (i > (90-5)) {  # Adjust this if you want to change the number of rows
+    plotParamterRange = plotParamterRange
+  } else {
+    plotParamterRange = plotParamterRange + theme(axis.text.x = element_blank(), axis.ticks.x = element_blank())
+  }
+
+  plot_list[[i-kValueLength]] = plotParamterRange
+}
+
+# Adjust grid layout to reduce space between plots
+parameterRanges_conc_v2_log_putativeMechanisms = grid.arrange(grobs=plot_list, ncol=6)
+
+ggsave(file = paste0("Output plots/R Analysis/Anabolic_resistance_concentrationsComprehensive", ".pdf"),
+       plot = parameterRanges_conc_v2_log_putativeMechanisms,
+       width = 6*2,
+       height = 4*2,
+       units = "in",
+       device = "pdf")
+
+```
