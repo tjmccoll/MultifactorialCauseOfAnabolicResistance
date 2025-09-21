@@ -15,7 +15,7 @@ This tool is being developed by the [Clarke Laboratory for Quantitative Exercise
 > McColl, T.J., Moore, D.R., Emberly, E., Church, D.D., & Clarke, D.C. [Exploring the multifactorial causes and therapeutic strategies for anabolic resistance in sarcopenia: A systems modeling study.](https://www.biorxiv.org/content/10.1101/2025.09.12.675977v1) bioRxiv 2025.09.12.675977; doi: 10.1101/2025.09.12.675977
 
 ## Getting started
-The 'McColl_2025_multifactorialCauseOfAnabolicResistance_250801' folder contains all required files () to run the MPSA, simulations, and replicate the manuscript figures.
+The 'McColl_2025_multifactorialCauseOfAnabolicResistance_250801' folder contains all required files to run the MPSA, simulations, and replicate the manuscript figures.
 
 ## Installation
 Download the package to a local folder (e.g., '~/MultiFactorialCauseOfAnabolicResistance/') by extracting the ZIP file or by running the following terminal command:
