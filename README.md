@@ -1,4 +1,4 @@
-# Exploring the mechanisms and therapeutic strategies for anabolic resistance in sarcopenia: a computational approach
+# Exploring the mechanisms and therapeutic strategies for anabolic resistance in sarcopenia: A systems modeling study
 
 ## Overview
 This study builds upon the previously developed [McColl & Clarke (2024) Muscle Protein Synthesis Kinetic Model](https://www.cell.com/iscience/fulltext/S2589-0042(23)02711-6?_returnURL=https%3A%2F%2Flinkinghub.elsevier.com%2Fretrieve%2Fpii%2FS2589004223027116%3Fshowall%3Dtrue) to simulate potential causes of anabolic resistance observed in sarcopenia. 
