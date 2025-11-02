@@ -1,0 +1,220 @@
+---
+title: "Anabolic resistance, targeted analysis: compensatory signaling with therapeutic simulations"
+author: "Taylor McColl"
+date: "2025-07-18"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+### Anabolic resistance, targeted approach - compensatory signaling with therapeutic simulations
+Data visualization
+```{r, include=FALSE}
+# clear data
+rm(list=ls())
+
+# load libraries
+library(ggplot2)
+library(gridExtra)
+library(tidyr)
+library(dplyr)
+library(patchwork)
+library(tidyverse)
+library(ggtext)
+```
+
+## Load data
+Simulations are run with worst-case estimates only
+```{r}
+setwd("/Users/taylormccoll/Documents/SFU/1. Ph.D./1. Research Projects/2. MPSA and analyses/4. Writing/2. Manuscript/ManuscriptCodeSharing/MultifactorialCauseOfAnabolicResistance/")
+
+  mps_therapy = data.frame(read.csv("3. TargetedApproach/Output Plots/25-10-04 17-13-28/4_Therapeutic strategies/compensatorySignaling/medians/therapy_compensatorySignalingSims_mpsMedian - 25-10-19 18-25-43.csv",header=F,sep=','))
+  mpb_therapy = data.frame(read.csv("3. TargetedApproach/Output Plots/25-10-04 17-13-28/4_Therapeutic strategies/compensatorySignaling/medians/therapy_compensatorySignalingSims_mpbMedian - 25-10-19 18-25-43.csv",header=F,sep=','))
+  nb_therapy = data.frame(read.csv("3. TargetedApproach/Output Plots/25-10-04 17-13-28/4_Therapeutic strategies/compensatorySignaling/medians/therapy_compensatorySignalingSims_nbMedian - 25-10-19 18-25-43.csv",header=F,sep=','))
+```
+
+## Manipulating data
+```{r}
+simulationNames = c("[mTOR] + [p70S6K] +\nmTORC1 sensitivity", "Combined")
+
+# Therapies
+therapyNames <- c("Therap0", "Therap0_CS", "Therap1", "Therap2", "Therap3", "Therap4", "Therap5", "Therap6", "Therap7",
+                  "Therap4_5", "Therap4_6", "Therap5_6", "Therap4_5_6", "Therap1_4_5_6")
+therapyNames_detail <- c("Pathological\nbaseline", "Compensatory\nsignaling", "1. Splanchnic\nextraction", "2. Blood flow", 
+                         "3. Insulin\nresistance", "4. [mTOR]", "5. mTORC1\nsensitivity", "6. [p70S6K]", "7. Compensatory\nsignaling",
+                         "4+5", "4+6", "5+6", "4+5+6", "1+4+5+6")
+
+rownames(mps_therapy) <- simulationNames # ** update row length + names
+rownames(mpb_therapy) <- simulationNames
+rownames(nb_therapy) <- simulationNames
+colnames(mps_therapy) <- therapyNames
+colnames(mpb_therapy) <- therapyNames
+colnames(nb_therapy) <- therapyNames
+
+# Reshape data from wide to long
+mps_therapy_long <- mps_therapy %>%
+  rownames_to_column("SimID") %>%
+  pivot_longer(cols = starts_with("Therap"), names_to = "TherapyID", values_to = "Value")
+mpb_therapy_long <- mpb_therapy %>%
+  rownames_to_column("SimID") %>%
+  pivot_longer(cols = starts_with("Therap"), names_to = "TherapyID", values_to = "Value")
+nb_therapy_long <- nb_therapy %>%
+  rownames_to_column("SimID") %>%
+  pivot_longer(cols = starts_with("Therap"), names_to = "TherapyID", values_to = "Value")
+
+## Add a column to each indicated the measurement type (MPS, MPB, or NB)
+mps_therapy_long$simType = "MPS"
+mpb_therapy_long$simType = "MPB"
+nb_therapy_long$simType = "NB"
+
+## combine to single long df
+musMetab_combined = bind_rows(mps_therapy_long, mpb_therapy_long, nb_therapy_long)
+musMetab_combined$simType = factor(musMetab_combined$simType, levels = c("MPS", "MPB", "NB"))
+
+# Ensure Sim is a factor
+musMetab_combined$SimID <- factor(musMetab_combined$SimID, levels = simulationNames)
+musMetab_combined$TherapyID <- factor(musMetab_combined$TherapyID, levels = therapyNames)
+
+# Remove compensatory signalling rows and col
+musMetab_combined <- musMetab_combined %>%
+  filter(TherapyID != "Therap7") %>%
+  filter(SimID != "Compensatory\nsignaling") %>%
+  filter(SimID != "Combined\n(comp. sig.)")
+```
+
+## MPS heatmap
+```{r}
+# remove compensatory from title names
+therapyNames_detail <- therapyNames_detail[therapyNames_detail != "7. Compensatory\nsignaling"]
+
+mps_healthyMedian = 0.457265
+
+mpsTherapy_data <- musMetab_combined %>%
+  filter(simType == "MPS") %>%
+  mutate(diff_from_healthy = Value - mps_healthyMedian)
+
+mpsTherapy_heatmap <- ggplot(mpsTherapy_data, aes(x = TherapyID, y = fct_rev(SimID), fill = Value)) +
+  geom_tile(color = "black", linewidth = 0.25) + # base-level bordering of entries
+  scale_fill_gradient2(
+    low = "#0571b0",
+    mid = "#f6e8c3",
+    high = "#ca0020",
+    midpoint = mps_healthyMedian,
+    limits = c(min(mpsTherapy_data$Value), max(mpsTherapy_data$Value))) +  
+  geom_text(aes(label = round(Value,2)), color="black", size = 2.25) +
+  theme_minimal(base_size = 8) +
+  scale_x_discrete(labels = therapyNames_detail, position = "top") + 
+  labs(x = "Therapeutic targets", y = "Anabolic\nresistance\nmechanisms", title = "MPS") + 
+  theme(
+    axis.title.x = element_text(vjust=0), 
+    axis.text.x = element_text(angle = 45, hjust = 0)) +
+  guides(fill = guide_colourbar(barwidth = 0.5, barheight = 3, title = NULL))
+
+print(mpsTherapy_heatmap)
+
+w_Heatmap = 6; h_heatmap = 1.75
+ggsave(file = paste0("R visualization/therapeuticSimulations/compensatorySignaling/therapeuticSim_compensatorySignaling_heatmap_MPS", ".pdf"),
+       plot = mpsTherapy_heatmap, 
+       width = w_Heatmap, height = h_heatmap, units = "in", device = "pdf")
+```
+
+
+## MPB heatmap
+```{r}
+mpb_healthyMedian = 0.176355
+
+mpbTherapy_data <- musMetab_combined %>%
+  filter(simType == "MPB") %>%
+  mutate(diff_from_healthy = Value - mpb_healthyMedian)
+
+mpbTherapy_heatmap <- ggplot(mpbTherapy_data, aes(x = TherapyID, y = fct_rev(SimID), fill = Value)) +
+  geom_tile(color = "black", linewidth = 0.25) + # base-level bordering of entries
+  # geom_tile(data = subset(mpbTherapy_data, Border == TRUE),
+  #           colour = "black", fill = NA, size = 1.25) +
+  scale_fill_gradient2(
+    low = "#ca0020",
+    mid = "#f6e8c3",
+    high = "#0571b0",
+    midpoint = mpb_healthyMedian,
+    limits = c(min(mpbTherapy_data$Value), max(mpbTherapy_data$Value))) +
+  scale_x_discrete(labels = therapyNames_detail, position = "top") +
+  geom_text(aes(label = round(Value,3)), color="black", size = 2.25) +
+  theme_minimal(base_size = 8) + 
+  # theme(axis.text.x = element_text(angle = 35, hjust = 1)) +
+   theme(
+    axis.title.x = element_text(vjust=0), 
+    axis.text.x = element_text(angle = 45, hjust = 0)) +
+ labs(x = "Therapeutic targets", y = "Anabolic\nresistance\nmechanisms", title = "MPB") + 
+  guides(fill = guide_colourbar(barwidth = 0.5, barheight = 3, title = NULL))
+
+ print(mpbTherapy_heatmap)
+
+ggsave(file = paste0("R visualization/therapeuticSimulations/compensatorySignaling/therapeuticSim_compensatorySignaling_heatmap_MPB", ".pdf"),
+       plot = mpbTherapy_heatmap, 
+       width = w_Heatmap, height = h_heatmap, units = "in", device = "pdf")
+```
+
+
+## NB heatmap
+```{r}
+nb_healthyMedian = 0.24127
+
+nbTherapy_data <- musMetab_combined %>%
+  filter(simType == "NB") %>%
+  mutate(diff_from_healthy = Value - nb_healthyMedian)
+
+nbTherapy_heatmap <- ggplot(nbTherapy_data, aes(x = TherapyID, y = fct_rev(SimID), fill = Value)) +
+  geom_tile(color = "black", linewidth = 0.25) + # base-level bordering of entries
+  # geom_tile(data = subset(nbTherapy_data, Border == TRUE),
+  #           colour = "black", fill = NA, size = 1.25) +
+  scale_fill_gradient2(
+    low = "#0571b0",
+    mid = "#f6e8c3",
+    high = "#ca0020",
+    midpoint = nb_healthyMedian,
+    limits = c(min(nbTherapy_data$Value), max(nbTherapy_data$Value))) +
+  scale_x_discrete(labels = therapyNames_detail, position = "top") +
+  geom_text(aes(label = round(Value,2)), color="black", size = 2.25) +
+  theme_minimal(base_size = 8) +
+  # theme(axis.text.x = element_text(angle = 35, hjust = 1)) +
+   theme(
+    axis.title.x = element_text(vjust=0), 
+    axis.text.x = element_text(angle = 45, hjust = 0)) +
+  labs(x = "Therapeutic targets", y = "Anabolic\nresistance\nmechanisms", title = "NB") + 
+    guides(fill = guide_colourbar(barwidth = 0.5, barheight = 3, title = NULL))
+
+ print(nbTherapy_heatmap)
+
+  ggsave(file = paste0("R visualization/therapeuticSimulations/compensatorySignaling/therapeuticSim_compensatorySignaling_heatmap_NB", ".pdf"),
+         plot = nbTherapy_heatmap, 
+        width = w_Heatmap, height = h_heatmap, units = "in", device = "pdf")
+```
+
+# Combine the heatmaps for the manuscript
+```{r}
+# remove y-axis information from left two plots
+# mpsTherapyHeatmap_comb = mpsTherapy_heatmap + theme(axis.title.x = element_blank(),
+#                              axis.text.x = element_blank(),
+#                              axis.ticks.x = element_blank())
+mpsTherapyHeatmap_comb = mpsTherapy_heatmap 
+mpbTherapyHeatmap_comb = mpbTherapy_heatmap + theme(axis.title.x = element_blank(),
+                             axis.text.x = element_blank(),
+                             axis.ticks.x = element_blank())
+nbTherapyHeatmap_comb = nbTherapy_heatmap + theme(axis.title.x = element_blank(),
+                             axis.text.x = element_blank(),
+                             axis.ticks.x = element_blank())
+
+therapySim_combined <- (mpsTherapyHeatmap_comb / mpbTherapyHeatmap_comb / nbTherapyHeatmap_comb) +
+    plot_annotation(tag_levels = 'A')
+
+print(therapySim_combined)
+
+# w_comb = 16.5*1.15; h_comb = 23*1.05
+w_comb = 16.5; h_comb = 10
+
+ggsave(file = paste0("R visualization/therapeuticSimulations/compensatorySignaling/therapeuticSim_compensatorySignaling_heatmap_combined", ".pdf"),
+       plot = therapySim_combined,
+       width = w_comb, height = h_comb, units = "cm", device = "pdf")
+```

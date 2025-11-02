@@ -1,0 +1,327 @@
+---
+title: "Anabolic resistance, targeted analysis: therapeutic simulations"
+author: "Taylor McColl"
+date: "2025-07-10"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+### Study 4b: Anabolic resistance, targeted approach - therapeutic simulations
+Data visualization
+```{r, include=FALSE}
+# clear data
+rm(list=ls())
+
+# load libraries
+library(ggplot2)
+library(gridExtra)
+library(tidyr)
+library(dplyr)
+library(patchwork)
+library(tidyverse)
+library(ggtext)
+```
+
+## Simulate *consensus* or *worst-case*
+```{r}
+# sim_type <- "consensus"
+sim_type <- "worst-case"
+```
+
+## Load data
+```{r}
+setwd("/Users/taylormccoll/Documents/SFU/1. Ph.D./1. Research Projects/2. MPSA and analyses/4. Writing/2. Manuscript/ManuscriptCodeSharing/MultifactorialCauseOfAnabolicResistance/")
+
+if (sim_type == "consensus") {
+  # combined therapies (median values)
+  mps_therapy = data.frame(read.csv("3. TargetedApproach/Output Plots/25-10-04 17-13-28/4_Therapeutic strategies/Consensus/median/therapy_consensus_mpsMedian - 25-10-19 16-50-50.csv",header=F,sep=','))
+  mpb_therapy = data.frame(read.csv("3. TargetedApproach/Output Plots/25-10-04 17-13-28/4_Therapeutic strategies/Consensus/median/therapy_consensus_mpbMedian - 25-10-19 16-50-50.csv",header=F,sep=','))
+  nb_therapy = data.frame(read.csv("3. TargetedApproach/Output Plots/25-10-04 17-13-28/4_Therapeutic strategies/Consensus/median/therapy_consensus_nbMedian - 25-10-19 16-50-50.csv",header=F,sep=','))
+  # Pathological response (target analysis simulations)
+  mps_pathBaseline= data.frame(read.csv("3. TargetedApproach/Output Plots/25-10-04 17-13-28/1_Consensus/MATLAB outputs/4b_targetedSim_mps - 25-10-04 17-32-15.csv",header=F,sep=','))
+  mpb_pathBaseline = data.frame(read.csv("3. TargetedApproach/Output Plots/25-10-04 17-13-28/1_Consensus/MATLAB outputs/4b_targetedSim_mpb - 25-10-04 17-32-15.csv",header=F,sep=','))
+  nb_pathBaseline = data.frame(read.csv("3. TargetedApproach/Output Plots/25-10-04 17-13-28/1_Consensus/MATLAB outputs/4b_targetedSim_nb - 25-10-04 17-32-15.csv",header=F,sep=','))
+
+} else if (sim_type == "worst-case") {
+  # combined therapies (median values)
+  mps_therapy = data.frame(read.csv("3. TargetedApproach/Output Plots/25-10-04 17-13-28/4_Therapeutic strategies/worstCase/median/therapy_worstCase_mpsMedian - 25-10-19 17-44-26.csv",header=F,sep=','))
+  mpb_therapy = data.frame(read.csv("3. TargetedApproach/Output Plots/25-10-04 17-13-28/4_Therapeutic strategies/worstCase/median/therapy_worstCase_mpbMedian - 25-10-19 17-44-26.csv",header=F,sep=','))
+  nb_therapy = data.frame(read.csv("3. TargetedApproach/Output Plots/25-10-04 17-13-28/4_Therapeutic strategies/worstCase/median/therapy_worstCase_nbMedian - 25-10-19 17-44-26.csv",header=F,sep=','))
+  # Pathological response (target analysis simulations)
+  mps_pathBaseline = data.frame(read.csv("3. TargetedApproach/Output Plots/25-10-04 17-13-28/2_Worst case/MATLAB outputs/4b_targetedSim_mps - 25-10-04 17-46-30.csv",header=F,sep=','))
+  mpb_pathBaseline = data.frame(read.csv("3. TargetedApproach/Output Plots/25-10-04 17-13-28/2_Worst case/MATLAB outputs/4b_targetedSim_mpb - 25-10-04 17-46-30.csv",header=F,sep=','))
+  nb_pathBaseline = data.frame(read.csv("3. TargetedApproach/Output Plots/25-10-04 17-13-28/2_Worst case/MATLAB outputs/4b_targetedSim_nb - 25-10-04 17-46-30.csv",header=F,sep=','))
+  }
+```
+
+## Calculated pathological baseline median values
+```{r}
+# MPS
+mps_pathBaseline_median <- apply(mps_pathBaseline,1,median)
+mps_pathBaseline_median <- data.frame(baselinePath = mps_pathBaseline_median[-1]) # remove healthy condition
+mps_therapy <- cbind(mps_pathBaseline_median, mps_therapy)
+# MPB
+mpb_pathBaseline_median <- apply(mpb_pathBaseline,1,median)
+mpb_pathBaseline_median <- data.frame(baselinePath = mpb_pathBaseline_median[-1]) # remove healthy condition
+mpb_therapy <- cbind(mpb_pathBaseline_median, mpb_therapy)
+# NB
+nb_pathBaseline_median <- apply(nb_pathBaseline,1,median)
+nb_pathBaseline_median <- data.frame(baselinePath = nb_pathBaseline_median[-1]) # remove healthy condition
+nb_therapy <- cbind(nb_pathBaseline_median, nb_therapy)
+```
+
+## Manipulating data
+```{r}
+simulationsNames = c("Splanchnic\nextraction", "Blood flow", "Insulin\nresistance", "[mTOR]",
+                    "mTORC1\nsensitivity", "[p70S6K]", "Compensatory\nsignaling", 
+                    "Combined", "Combined\n(comp. sig.)")
+# Therapies
+therapyNames <- c("Therap0", "Therap1", "Therap2", "Therap3", "Therap4", "Therap5", "Therap6", "Therap7",
+                  "Therap4_5", "Therap4_6", "Therap5_6", "Therap4_5_6", "Therap1_4_5_6")
+therapyNames_detail <- c("Pathological\nbaseline", "1. Splanchnic\nextraction", "2. Blood flow", "3. Insulin\nresistance", "4. [mTOR]",
+                    "5. mTORC1\nsensitivity", "6. [p70S6K]", "7. Compensatory\nsignaling",
+                    "4+5", "4+6", "5+6", "4+5+6", "1+4+5+6")
+
+rownames(mps_therapy) <- simulationsNames
+rownames(mpb_therapy) <- simulationsNames
+rownames(nb_therapy) <- simulationsNames
+colnames(mps_therapy) <- therapyNames
+colnames(mpb_therapy) <- therapyNames
+colnames(nb_therapy) <- therapyNames
+
+# Reshape data from wide to long
+mps_therapy_long <- mps_therapy %>%
+  rownames_to_column("SimID") %>%
+  pivot_longer(cols = starts_with("Therap"), names_to = "TherapyID", values_to = "Value")
+mpb_therapy_long <- mpb_therapy %>%
+  rownames_to_column("SimID") %>%
+  pivot_longer(cols = starts_with("Therap"), names_to = "TherapyID", values_to = "Value")
+nb_therapy_long <- nb_therapy %>%
+  rownames_to_column("SimID") %>%
+  pivot_longer(cols = starts_with("Therap"), names_to = "TherapyID", values_to = "Value")
+
+## Add a column to each indicated the measurement type (MPS, MPB, or NB)
+mps_therapy_long$simType = "MPS"
+mpb_therapy_long$simType = "MPB"
+nb_therapy_long$simType = "NB"
+
+## combine to single long df
+musMetab_combined = bind_rows(mps_therapy_long, mpb_therapy_long, nb_therapy_long)
+musMetab_combined$simType = factor(musMetab_combined$simType, levels = c("MPS", "MPB", "NB"))
+
+# Ensure Sim is a factor
+musMetab_combined$SimID <- factor(musMetab_combined$SimID, levels = simulationsNames)
+musMetab_combined$TherapyID <- factor(musMetab_combined$TherapyID, levels = therapyNames)
+
+# Indicate entries with therapies to recover to the healthy condition
+border_rows = c(seq(2, 91, by=14), # MPS
+                seq(119, 208, by=14), # MPB 
+                seq(236, 325, by=14)) # NB 
+musMetab_combined$Border = FALSE
+musMetab_combined$Border[border_rows] = TRUE
+
+# Remove compensatory signalling rows and col
+musMetab_combined <- musMetab_combined %>%
+  filter(TherapyID != "Therap7") %>%
+  filter(SimID != "Compensatory\nsignaling") %>%
+  filter(SimID != "Combined\n(comp. sig.)")
+```
+
+## MPS heatmap
+```{r}
+# rempove compensatory from title names
+therapyNames_detail <- therapyNames_detail[therapyNames_detail != "7. Compensatory\nsignaling"]
+
+mps_healthyMedian = median(as.numeric(mps_pathBaseline[1,]))
+
+mpsTherapy_data <- musMetab_combined %>%
+  filter(simType == "MPS") %>%
+  mutate(diff_from_healthy = Value - mps_healthyMedian)
+
+mpsTherapy_heatmap <- ggplot(mpsTherapy_data, aes(x = TherapyID, y = fct_rev(SimID), fill = Value)) +
+  geom_tile(color = "black", linewidth = 0.25) + # base-level bordering of entries
+  geom_tile(data = subset(mpsTherapy_data, Border == TRUE),
+            colour = "black", fill = NA, size = 1.25) +
+  scale_fill_gradient2(
+    low = "#0571b0",
+    mid = "#f6e8c3",
+    high = "#ca0020",
+    midpoint = mps_healthyMedian,
+    limits = c(min(mpsTherapy_data$Value), max(mpsTherapy_data$Value))) +  
+  # scale_x_discrete(labels = therapyNames_detail) +
+  geom_text(aes(label = round(Value,2)), color="black", size = 2.25) +
+  theme_minimal(base_size = 8.5) +
+  # theme(axis.text.x = element_text(angle = 35, hjust = 1)) +
+  scale_x_discrete(labels = therapyNames_detail, position = "top") + 
+  theme(
+    axis.title.x = element_text(vjust=0), 
+    axis.text.x = element_text(angle = 40, hjust = 0)) +
+  labs(x = "Therapeutic targets", y = "Anabolic resistance mechanisms", title = "MPS") + 
+  guides(fill = guide_colourbar(barwidth = 0.5, barheight = 8, title = NULL))
+
+ print(mpsTherapy_heatmap)
+
+w_Heatmap = 5.75; h_heatmap = 3.125
+if (sim_type == "consensus") {
+  ggsave(file = paste0("R visualization/therapeuticSimulations/therapeuticSim_heatmap_consensus_MPS", ".pdf"),
+         plot = mpsTherapy_heatmap, 
+         width = w_Heatmap, height = h_heatmap, units = "in", device = "pdf")
+} else if (sim_type == "worst-case"){
+  ggsave(file = paste0("R visualization/therapeuticSimulations/therapeuticSim_heatmap_worstCase_MPS", ".pdf"),
+         plot = mpsTherapy_heatmap,
+         width = w_Heatmap, height = h_heatmap, units = "in", device = "pdf")
+}
+```
+
+
+## MPB heatmap
+```{r}
+mpb_healthyMedian = median(as.numeric(mpb_pathBaseline[1,]))
+
+mpbTherapy_data <- musMetab_combined %>%
+  filter(simType == "MPB") %>%
+  mutate(diff_from_healthy = Value - mpb_healthyMedian)
+
+mpbTherapy_heatmap <- ggplot(mpbTherapy_data, aes(x = TherapyID, y = fct_rev(SimID), fill = Value)) +
+  geom_tile(color = "black", linewidth = 0.25) + # base-level bordering of entries
+  geom_tile(data = subset(mpbTherapy_data, Border == TRUE),
+            colour = "black", fill = NA, size = 1.25) +
+  scale_fill_gradient2(
+    low = "#ca0020",
+    mid = "#f6e8c3",
+    high = "#0571b0",
+    midpoint = mpb_healthyMedian,
+    limits = c(min(mpbTherapy_data$Value), max(mpbTherapy_data$Value))) +
+  scale_x_discrete(labels = therapyNames_detail, position = "top") +
+  geom_text(aes(label = round(Value,3)), color="black", size = 2.25) +
+  theme_minimal(base_size = 8.5) + 
+  theme(
+    axis.title.x = element_text(vjust=0), 
+    axis.text.x = element_text(angle = 45, hjust = 0)) +
+ labs(x = "Therapeutic targets", y = "Anabolic resistance mechanisms", title = "MPB") + 
+  guides(fill = guide_colourbar(barwidth = 0.5, barheight = 8, title = NULL))
+
+ print(mpbTherapy_heatmap)
+
+if (sim_type == "consensus") {
+  ggsave(file = paste0("R visualization/therapeuticSimulations/therapeuticSim_heatmap_consensus_MPB", ".pdf"),
+         plot = mpbTherapy_heatmap, 
+         width = w_Heatmap, height = h_heatmap, units = "in", device = "pdf")
+} else if (sim_type == "worst-case"){
+  ggsave(file = paste0("R visualization/therapeuticSimulations/therapeuticSim_heatmap_worstCase_MPB", ".pdf"),
+         plot = mpbTherapy_heatmap,
+        width = w_Heatmap, height = h_heatmap, units = "in", device = "pdf")
+}
+```
+
+
+## NB heatmap
+```{r}
+nb_healthyMedian = median(as.numeric(nb_pathBaseline[1,]))
+
+nbTherapy_data <- musMetab_combined %>%
+  filter(simType == "NB") %>%
+  mutate(diff_from_healthy = Value - nb_healthyMedian)
+
+nbTherapy_heatmap <- ggplot(nbTherapy_data, aes(x = TherapyID, y = fct_rev(SimID), fill = Value)) +
+  geom_tile(color = "black", linewidth = 0.25) + # base-level bordering of entries
+  geom_tile(data = subset(nbTherapy_data, Border == TRUE),
+            colour = "black", fill = NA, size = 1.25) +
+  scale_fill_gradient2(
+    low = "#0571b0",
+    mid = "#f6e8c3",
+    high = "#ca0020",
+    midpoint = nb_healthyMedian,
+    limits = c(min(nbTherapy_data$Value), max(nbTherapy_data$Value))) +
+  scale_x_discrete(labels = therapyNames_detail, position = "top") +
+  geom_text(aes(label = round(Value,2)), color="black", size = 2.25) +
+  theme_minimal(base_size = 8.5) +
+  theme(
+    axis.title.x = element_text(vjust=0), 
+    axis.text.x = element_text(angle = 45, hjust = 0)) +
+  labs(x = "Therapeutic targets", y = "Anabolic resistance mechanisms", title = "NB") + 
+    guides(fill = guide_colourbar(barwidth = 0.5, barheight = 8, title = NULL))
+
+ print(nbTherapy_heatmap)
+
+if (sim_type == "consensus") {
+  ggsave(file = paste0("R visualization/therapeuticSimulations/therapeuticSim_heatmap_consensus_NB", ".pdf"),
+         plot = nbTherapy_heatmap, 
+        width = w_Heatmap, height = h_heatmap, units = "in", device = "pdf")
+} else if (sim_type == "worst-case"){
+  ggsave(file = paste0("R visualization/therapeuticSimulations/therapeuticSim_heatmap_worstCase_NB", ".pdf"),
+         plot = nbTherapy_heatmap,
+        width = w_Heatmap, height = h_heatmap, units = "in", device = "pdf")
+}
+```
+
+# Combine the heatmaps for the manuscript
+```{r}
+# remove y-axis information from left two plots
+mpsTherapyHeatmap_comb = mpsTherapy_heatmap 
+mpbTherapyHeatmap_comb = mpbTherapy_heatmap + theme(axis.title.x = element_blank(),
+                             axis.text.x = element_blank(),
+                             axis.ticks.x = element_blank())
+nbTherapyHeatmap_comb = nbTherapy_heatmap + theme(axis.title.x = element_blank(),
+                             axis.text.x = element_blank(),
+                             axis.ticks.x = element_blank())
+
+if (sim_type == "consensus") {
+  therapySim_combined <- (mpsTherapyHeatmap_comb / mpbTherapyHeatmap_comb / nbTherapyHeatmap_comb) +
+    plot_annotation(
+      title="**Consensus estimates**", 
+      tag_levels = 'A',
+      theme = theme(
+        plot.title = element_markdown(size=12))
+      ) &
+    theme(plot.tag = element_text(size=11))
+} else if (sim_type == "worst-case") {
+  therapySim_combined <- (mpsTherapyHeatmap_comb / mpbTherapyHeatmap_comb / nbTherapyHeatmap_comb) +
+    plot_annotation(
+      title="**Worst-case estimates**",
+      tag_levels = list(c('D','E','F')),
+      theme = theme(
+        plot.title = element_markdown(size=12))
+      ) &
+    theme(plot.tag = element_text(size=11))
+}
+
+# # 2 panel figure
+# if (sim_type == "consensus") {
+#   combined_plot_twoPanel = (mpsSimulations_comb / nbSimulations) +
+#     plot_annotation(
+#       title = "**Consensus estimates**",
+#       tag_levels = 'A',
+#       theme = theme(
+#         plot.title = element_markdown(size = 11))
+#         ) &
+#     theme(plot.tag = element_text(size = 10))
+# } else if (sim_type == "worst-case") {
+#   combined_plot_twoPanel = (mpsSimulations_comb / nbSimulations)+
+#     plot_annotation(
+#       title = "**Worst-case estimates**",
+#       tag_levels = list(c("C", "D")),
+#       theme = theme(
+#         plot.title = element_markdown(size = 11))
+#         ) &
+#     theme(plot.tag = element_text(size = 10))
+# }
+
+print(therapySim_combined)
+
+# w_comb = 16.5*1.15; h_comb = 23*1.05
+w_comb = 16.5; h_comb = 23*.9
+
+if (sim_type == "consensus") {
+  ggsave(file = paste0("R visualization/therapeuticSimulations/therapeuticSim_heatmap_consensus_combined", ".pdf"),
+         plot = therapySim_combined,
+         width = w_comb, height = h_comb, units = "cm", device = "pdf")
+} else if (sim_type == "worst-case"){
+  ggsave(file = paste0("R visualization/therapeuticSimulations/therapeuticSim_heatmap_worst_combined", ".pdf"),
+         plot = therapySim_combined,
+         width = w_comb, height = h_comb, units = "cm", device = "pdf")
+}
+```

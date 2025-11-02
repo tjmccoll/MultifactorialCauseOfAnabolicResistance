@@ -1,0 +1,377 @@
+---
+title: 'Anabolic resistance, targeted analysis'
+author: "Taylor McColl"
+date: "2025-04-17"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+### Study 4b: Anabolic resistance, targeted approach
+Data visualization
+```{r, include=FALSE}
+# clear data
+rm(list=ls())
+
+# load libraries
+library(ggplot2)
+library(gridExtra)
+library(tidyr)
+library(dplyr)
+library(patchwork)
+library(ggtext)
+```
+
+## Simulate *consensus* or *worst-case*
+Comment in the appropriate estimate
+```{r}
+# sim_type <- "consensus"
+sim_type <- "worst-case"
+```
+
+## Load data
+```{r, include=FALSE}
+setwd("/Users/taylormccoll/Documents/SFU/1. Ph.D./1. Research Projects/2. MPSA and analyses/4. Writing/2. Manuscript/ManuscriptCodeSharing/MultifactorialCauseOfAnabolicResistance/")
+```
+```{r}
+if (sim_type == "consensus") {
+  
+  mps_targeted = data.frame(t(read.csv("Output Plots/25-10-04 17-13-28/1_Consensus/MATLAB outputs/4b_targetedSim_mps - 25-10-04 17-32-15.csv",header=F,sep=',')))
+  mpb_targeted = data.frame(t(read.csv("Output Plots/25-10-04 17-13-28/1_Consensus/MATLAB outputs/4b_targetedSim_mpb - 25-10-04 17-32-15.csv",header=F,sep=',')))
+  nb_targeted = data.frame(t(read.csv("Output Plots/25-10-04 17-13-28/1_Consensus/MATLAB outputs/4b_targetedSim_nb - 25-10-04 17-32-15.csv",header=F,sep=',')))
+
+} else if (sim_type == "worst-case") {
+
+  mps_targeted = data.frame(t(read.csv("Output Plots/25-10-04 17-13-28/2_Worst case/MATLAB outputs/4b_targetedSim_mps - 25-10-04 17-46-30.csv",header=F,sep=',')))
+  mpb_targeted = data.frame(t(read.csv("Output Plots/25-10-04 17-13-28/2_Worst case/MATLAB outputs/4b_targetedSim_mpb - 25-10-04 17-46-30.csv",header=F,sep=',')))
+  nb_targeted = data.frame(t(read.csv("Output Plots/25-10-04 17-13-28/2_Worst case/MATLAB outputs/4b_targetedSim_nb - 25-10-04 17-46-30.csv",header=F,sep=',')))
+}
+```
+
+## Manipulating data
+```{r}
+# "noChange", "k68", "k6", "k16", "mTOR", "k40", "p70S6K", "compensatory signal", "combined (no comp. sig)", "combined (all)"
+simulationsNames <- c("1", "2", "3", "4", "5", "6", "7", "8", "9", "10")
+
+colnames(mps_targeted) <- simulationsNames
+colnames(mpb_targeted) <- simulationsNames
+colnames(nb_targeted) <- simulationsNames
+
+# Reshape data from wide to long
+mps_target_long <- mps_targeted %>%
+  pivot_longer(cols = everything(), names_to = "Condition", values_to = "Value")
+mpb_target_long <- mpb_targeted %>%
+  pivot_longer(cols = everything(), names_to = "Condition", values_to = "Value")
+nb_target_long <- nb_targeted %>%
+  pivot_longer(cols = everything(), names_to = "Condition", values_to = "Value")
+
+# Ensure Condition is a factor
+mps_target_long$Condition <- factor(mps_target_long$Condition, levels = simulationsNames)
+mpb_target_long$Condition <- factor(mpb_target_long$Condition, levels = simulationsNames)
+nb_target_long$Condition <- factor(nb_target_long$Condition, levels = simulationsNames)
+
+## Add a column to each indicated the measurement type (MPS, MPB, or NB)
+mps_target_long$simType = "MPS"
+mpb_target_long$simType = "MPB"
+nb_target_long$simType = "NB"
+
+# Remove compensatory signalling simulation
+mps_target_long <- mps_target_long %>%
+  filter(Condition != 8)
+mpb_target_long <- mpb_target_long %>%
+  filter(Condition != 8)
+nb_target_long <- nb_target_long %>%
+  filter(Condition != 8)
+```
+
+## Plotting data
+```{r}
+plotTitle_font = 10
+plotAxisLabel_font = 8
+plotAxisValue_font = 6
+
+detailedConditions = c("Healthy", "1. Splanchnic\nextraction", "2. Blood flow", 
+                       "3. Insulin\nresistance", "4. [mTOR]", "5. mTORC1\nsensitivity", 
+                       "6. [p70S6K]", "Combined", "Combined\n(comp. sig.)")
+```
+
+# MPS (w/ gradient and threshold; 2-tail 95% CI)
+```{r}
+# Define x-levels and numeric positions
+x_levels <- levels(mps_target_long$Condition)
+x_numeric <- seq_along(x_levels)-1
+
+# Define medians beforehand
+# healthy_median <- median(mps_target_long$Value[mps_target_long$Condition == x_levels[1]])
+healthy_median <- 0.461 # Mitchell et al. (2015)
+older_median <- 0.267 # Mitchell et al (2017)
+
+# Create a gradient background aligned to x = 1 to number of conditions
+gradient_df <- expand.grid(
+  x = seq(min(x_numeric+2) - 0.5, max(x_numeric) + 0.5, length.out = 100),
+  y = seq(0.049, 0.485, length.out = 100)
+) %>%
+  mutate(
+    # Distance from 0.267 — centre of the gradient
+    dist_from_mid = abs(y - older_median),
+    fill = scales::rescale(-dist_from_mid)  # -dist so 0.267 = max (darkest)
+  )
+
+ref_lines <- data.frame(
+  label = factor(
+    c("Young\nadults", "Older\nadults"),
+    levels = c("Young\nadults", "Older\nadults")
+  ),
+  yintercept = c(healthy_median, older_median)
+)
+
+## ---
+## Create the plot
+
+# Defining legend placement and y-limit
+if (sim_type == "worst-case") {
+  legend_pos <- c(1-0.0125/2, 0.9875)
+  legend_just <- c("right", "top")
+  y_limit <- c(0.0, 1.325)
+} else if (sim_type == "consensus") {
+  legend_pos <- c(1-0.0125/2, 0.9875)
+  legend_just <- c("right", "top")
+  y_limit <- c(0.0, 1.325)
+}
+
+mpsSimulations_gradient <- ggplot() +
+  
+  # Gradient background using numeric x
+  geom_raster(
+    data = gradient_df,
+    aes(x = x, y = y, fill = fill),
+    interpolate = TRUE,
+    alpha = 0.7  # adjust transparency if desired
+  ) +
+  scale_fill_gradient(
+    low = "white",
+    high = "darkred",
+    guide = "none"
+  ) +
+  
+  # Actual data with discrete x = Condition
+  geom_violin(data = mps_target_long, aes(x = Condition, y = Value),
+              trim = TRUE, fill = "lightgray", colour = NA, alpha = 0.8, width = 1) +
+  geom_boxplot(data = mps_target_long, aes(x = Condition, y = Value),
+               width = 0.2, outlier.shape = NA, colour = "black") +
+  geom_jitter(data = mps_target_long, aes(x = Condition, y = Value),
+              width = 0.1, alpha = 0.1 , size = 0.5) +
+  
+  # Horizontal lines with legend
+  geom_hline(
+    data = ref_lines,
+    aes(yintercept = yintercept, linetype = label, colour = label),
+    linewidth = 0.5, alpha = 0.75
+  ) +
+
+  # Custom line legend styling
+  scale_linetype_manual(name = NULL,
+                        values = c("Young\nadults" = "longdash",
+                                   "Older\nadults" = "dotdash"),
+                        guide = guide_legend(nrow = 1, ncol = 2)
+                        ) +
+  scale_colour_manual(
+    name = NULL,
+    values = c(
+      "Young\nadults" = "grey25",
+      "Older\nadults" = "red4"),
+    guide = guide_legend(nrow = 1, ncol = 2)
+    ) +
+
+  # Custom labels and styling
+  scale_x_discrete(labels = detailedConditions) +
+  scale_y_continuous(breaks = seq(0, 2, by=0.2), limits = c(y_limit)) +
+  theme_minimal() +
+  labs(x = "Simulated putative mechanism",
+       y = "Leucine synthesized\ninto muscle (grams)",
+       title = "Muscle protein synthesis") +
+  theme(
+    axis.text.x = element_text(angle = 35, hjust = 1, size = plotAxisValue_font),
+    axis.text.y = element_text(size = plotAxisValue_font),
+    plot.title = element_text(hjust = 0.5, size = plotTitle_font),
+    axis.title.y = element_text(size = plotAxisLabel_font),
+    axis.title.x = element_text(size = plotAxisLabel_font),
+    legend.text = element_text(size = plotAxisValue_font),
+    # legend.position = c(1, 0),
+    # legend.justification = c("right", "bottom"),
+    legend.position = legend_pos,
+    legend.justification = legend_just,
+    legend.background = element_rect(fill = "white", colour = "black", linewidth = 0.3),
+    legend.box.background = element_rect(fill = "white", colour = "black", linewidth = 0.3),
+    legend.spacing.y = unit(1, "pt"),
+    legend.spacing.x = unit(2, "pt"),
+    legend.key.height = unit(16, "pt"),
+    legend.key.width = unit(17, "pt"),
+    legend.margin = margin(1, 1, 1, 1)
+  )
+
+ print(mpsSimulations_gradient)
+
+if (sim_type == "consensus") {
+  ggsave(file = paste0("R visualization/consensus/targetedAnalysis_consensus_MPS", ".pdf"),
+         plot = mpsSimulations_gradient, width = 5, height = 3, units = "in", device = "pdf")
+} else if (sim_type == "worst-case"){
+  ggsave(file = paste0("R visualization/worstCase/targetedAnalysis_worstCase_MPS", ".pdf"),
+         plot = mpsSimulations_gradient,
+         width = 5, height = 3, units = "in", device = "pdf")
+}
+```
+
+# MPB
+```{r}
+mpbSimulations = ggplot(mpb_target_long, aes(x = Condition, y = (Value)))+
+  geom_violin(trim = TRUE, fill = "lightgray", colour = NA, alpha = 0.8, width = 1) +
+    geom_boxplot(width = 0.2, outlier.shape = NA, colour = "black") +
+  geom_jitter(width = 0.1, alpha = 0.1, size = 0.5) +
+  geom_hline(yintercept = median((mpb_target_long$Value[mpb_target_long$Condition == 1])),
+             linetype = "longdash", colour = "gray25", linewidth = 0.5, alpha = 0.5) +
+  scale_x_discrete(labels = detailedConditions, position = ) + 
+  ylim(0.0,2.75) +
+  theme_minimal() +
+  labs(x = "Simulated putative mechanism", y = "Leucine degraded\nfrom muscle (grams)", title = "Muscle protein breakdown") +
+  theme(
+    axis.text.x = element_text(angle = 35, hjust = 1, size = plotAxisValue_font),
+    axis.text.y = element_text(size = plotAxisValue_font),
+    plot.title = element_text(hjust = 0.5, size = plotTitle_font),
+    axis.title.y = element_text(size = plotAxisLabel_font),
+    axis.title.x = element_text(size = plotAxisLabel_font)
+  )
+
+print(mpbSimulations)
+
+if (sim_type == "consensus") {
+  ggsave(file = paste0("R visualization/consensus/targetedAnalysis_consensus_MPB", ".pdf"),
+         plot = mpbSimulations, 
+         width = 5, height = 3, units = "in", device = "pdf")
+} else if (sim_type == "worst-case"){
+  ggsave(file = paste0("R visualization/worstCase/targetedAnalysis_worstCase_MPB", ".pdf"),
+         plot = mpbSimulations, 
+         width = 5, height = 3, units = "in", device = "pdf")
+}
+```
+
+# NB
+```{r}
+nbSimulations = ggplot(nb_target_long, aes(x = Condition, y = Value))+
+  geom_violin(trim = TRUE, fill = "lightgray", colour = NA, alpha = 0.8, width = 1) +
+    geom_boxplot(width = 0.2, outlier.shape = NA, colour = "black") +
+  geom_jitter(width = 0.1, alpha = 0.1, size = 0.5) +
+  geom_hline(yintercept = median(nb_target_long$Value[nb_target_long$Condition == 1]),
+             linetype = "longdash", colour = "gray25", linewidth = 0.5, alpha = 0.5) +
+  scale_x_discrete(labels = detailedConditions, position = ) + 
+  # ylim(-1.1, 0.8) +
+  ylim(-1.35, 1.26) +
+  theme_minimal() +
+  labs(x = "Simulated putative mechanism", y = "Leucine incorporated\ninto muscle (grams)", title = "Net Balance") +
+   theme(
+    axis.text.x = element_text(angle = 35, hjust = 1, size = plotAxisValue_font),
+    axis.text.y = element_text(size = plotAxisValue_font),
+    plot.title = element_text(hjust = 0.5, size = plotTitle_font),
+    axis.title.y = element_text(size = plotAxisLabel_font),
+    axis.title.x = element_text(size = plotAxisLabel_font)
+  )
+
+print(nbSimulations)
+
+if (sim_type == "consensus") {
+  ggsave(file = paste0("R visualization/Consensus/targetedAnalysis_consensus_NB", ".pdf"),
+         plot = nbSimulations, 
+         width = 5, height = 3, units = "in", device = "pdf")
+} else if (sim_type == "worst-case"){
+  ggsave(file = paste0("R visualization/worstCase/targetedAnalysis_worstCase_NB", ".pdf"),
+         plot = nbSimulations, 
+         width = 5, height = 3, units = "in", device = "pdf")
+}
+```
+
+# Combine MPS and NB for manuscript figure
+```{r}
+mpsSimulations_comb = mpsSimulations_gradient + theme(axis.title.x = element_blank(),
+                             axis.text.x = element_blank(),
+                             axis.ticks.x = element_blank())
+
+if (sim_type == "consensus") {
+  combined_plot_twoPanel = (mpsSimulations_comb / nbSimulations) +
+    plot_annotation(
+      title = "**Consensus estimates**",
+      tag_levels = 'A',
+      theme = theme(
+        plot.title = element_markdown(size = 11))
+        ) &
+    theme(plot.tag = element_text(size = 10))
+} else if (sim_type == "worst-case") {
+  combined_plot_twoPanel = (mpsSimulations_comb / nbSimulations)+
+    plot_annotation(
+      title = "**Worst-case estimates**",
+      tag_levels = list(c("C", "D")),
+      theme = theme(
+        plot.title = element_markdown(size = 11))
+        ) &
+    theme(plot.tag = element_text(size = 10))
+}
+print(combined_plot_twoPanel)
+
+w_val = 4.5; h_val = 5.5
+if (sim_type == "consensus") {
+  ggsave(file = paste0("R visualization/consensus/targetedAnalysis_consensus_comb_twoPanel", ".pdf"),
+         plot = combined_plot_twoPanel, 
+         width = w_val, height = h_val, units = "in", device = "pdf")
+} else if (sim_type == "worst-case"){
+  ggsave(file = paste0("R visualization/worstCase/targetedAnalysis_worstCase_comb_twoPanel", ".pdf"),
+         plot = combined_plot_twoPanel, 
+         width = w_val, height = h_val, units = "in", device = "pdf")
+}
+```
+
+
+# Combine the three plots (supplementary material)
+```{r}
+# remove x-axis information from upper two plots
+mpsSimulations_comb = mpsSimulations_gradient + theme(axis.title.x = element_blank(),
+                             axis.text.x = element_blank(),
+                             axis.ticks.x = element_blank())
+mpbSimulations_comb = mpbSimulations + theme(axis.title.x = element_blank(),
+                             axis.text.x = element_blank(),
+                             axis.ticks.x = element_blank())
+
+combined_plot_threePanel <- (mpsSimulations_comb / mpbSimulations_comb / nbSimulations)
+
+if (sim_type == "consensus") {
+  combined_plot_threePanel <- (mpsSimulations_comb / mpbSimulations_comb / nbSimulations) +
+    plot_annotation(
+      title = "**Consensus estimates**",
+      tag_levels = 'A',
+      theme = theme(
+        plot.title = element_markdown(size = 11))
+        ) &
+    theme(plot.tag = element_text(size = 10))
+} else if (sim_type == "worst-case") {
+  combined_plot_threePanel <- (mpsSimulations_comb / mpbSimulations_comb / nbSimulations) +
+    plot_annotation(
+      title = "**Worst-case estimates**",
+      tag_levels = list(c("D", "E", "F")),
+      theme = theme(
+        plot.title = element_markdown(size = 11))
+        ) &
+    theme(plot.tag = element_text(size = 10))
+}
+print(combined_plot_threePanel)
+
+if (sim_type == "consensus") {
+  ggsave(file = paste0("R visualization/consensus/targetedAnalysis_consensus_comb_threePanel", ".pdf"),
+         plot = combined_plot_threePanel, 
+         width = 16.51*0.8, height = 23.04*0.8, units = "cm", device = "pdf")
+} else if (sim_type == "worst-case"){
+  ggsave(file = paste0("R visualization/worstCase/targetedAnalysis_worstCase_comb_threePanel", ".pdf"),
+         plot = combined_plot_threePanel, 
+         width = 16.51*0.8, height = 23.04*0.8, units = "cm", device = "pdf")
+}
+```
+
