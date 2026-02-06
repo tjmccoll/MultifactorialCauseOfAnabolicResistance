@@ -32,7 +32,7 @@ The analyses presented in the paper are organized in three seperate folders:
 
 Each folder contains a readMe file that details the included files in each folder
 
-A seperate folder is included that contains the original McColl & Clarke (2024) _iscience_ model that underlies these analyses
+A seperate folder is included that contains the original McColl & Clarke (2024) _iScience_ model that underlies these analyses
 * "McColl_2023_Muscle Protein Synthesis Kinetic Model_230919"
 
 ## Contact
