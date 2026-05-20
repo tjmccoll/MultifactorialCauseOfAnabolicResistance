@@ -14,7 +14,7 @@ This tool is being developed by the [Clarke Laboratory for Quantitative Exercise
 
 > McColl TJ, Moore DR, Emberly E, Church DD, & Clarke DC. [Exploring the multifactorial causes and therapeutic strategies for anabolic resistance in sarcopenia: A systems modeling study.](https://www.biorxiv.org/content/10.1101/2025.09.12.675977v1) bioRxiv 2025.09.12.675977; doi: 10.1101/2025.09.12.675977
 <picture>
-  <img src="https://github.com/user-attachments/files/28069139/AbstractFigure_v1.crop.pdf">
+  <img align="center" width="100" height="100" src="https://github.com/user-attachments/files/28069139/AbstractFigure_v1.crop.pdf">
 </picture>
 
 ## Getting started
