@@ -13,9 +13,9 @@ In the Targeted Approach, mechanisms are simulated both individually and in comb
 This tool is being developed by the [Clarke Laboratory for Quantitative Exercise Biology](https://www.sfu.ca/clarkelab-bpk.html). Further information can be found in the following study.
 
 > McColl TJ, Moore DR, Emberly E, Church DD, & Clarke DC. [Exploring the multifactorial causes and therapeutic strategies for anabolic resistance in sarcopenia: A systems modeling study.](https://www.biorxiv.org/content/10.1101/2025.09.12.675977v1) bioRxiv 2025.09.12.675977; doi: 10.1101/2025.09.12.675977
-<picture>
-  <img align="center" width="502" height="394" src="https://github.com/user-attachments/files/28069139/AbstractFigure_v1.crop.pdf">
-</picture>
+<p align="center">
+  <img  width="753" height="591" src="https://github.com/user-attachments/files/28069139/AbstractFigure_v1.crop.pdf">
+</p>
 
 ## Getting started
 The 'McColl_2025_multifactorialCauseOfAnabolicResistance_250801' folder contains all required files to run the MPSA, simulations, and replicate the manuscript figures.
